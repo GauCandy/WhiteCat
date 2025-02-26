@@ -1,6 +1,6 @@
-# ![WhiteCat Logo](./cat1)
+# ![WhiteCat Logo](./cat)
 
-# WhiteCat Bot
+# WhiteCat
 
 WhiteCat là một bot đa năng giúp quản lý máy chủ, tự động phản hồi tin nhắn và cung cấp nhiều tính năng hữu ích khác trên Discord.
 
