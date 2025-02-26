@@ -38,7 +38,7 @@ After activation, you will be able to use more advanced commands.
 
 ## Terms of Service
 
-By using WhiteCat, you agree to the bot's Terms of Service. If the terms change, users must re-run `>activate` to continue using certain special features. [Read the full Terms of Service](./Terms of Service.md).
+By using WhiteCat, you agree to the bot's Terms of Service. If the terms change, users must re-run `>activate` to continue using certain special features. [Read the full Terms of Service]([./Terms of Service.md](https://github.com/GauCandy/WhiteCat/blob/main/Terms%20of%20Service.md)).
 
 ---
 
