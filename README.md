@@ -14,6 +14,8 @@ WhiteCat is a multifunctional Discord bot designed to enhance your server experi
 
 ✅ Moderation tools (kick, mute, message logs)
 
+✅ And more...
+
 ## Getting Started
 
 Before using special features, you must activate the bot by accepting the Terms of Service.
