@@ -1,35 +1,44 @@
-# ![WhiteCat Logo](./cat)
+# WhiteCat Bot
 
-# WhiteCat
+![WhiteCat Logo](./cat.png)
 
-WhiteCat là một bot đa năng giúp quản lý máy chủ, tự động phản hồi tin nhắn và cung cấp nhiều tính năng hữu ích khác trên Discord.
+WhiteCat is a multifunctional Discord bot designed to enhance your server experience with various utility commands, automated responses, and interactive GIFs.
 
-## 🌟 Tính Năng Chính
+## Features
 
-✅ Quản lý máy chủ hiệu quả
-✅ Phản hồi tự động
-✅ Tương tác với người dùng qua GIF
-✅ Và nhiều hơn nữa...
+✅ Utility commands (time, reminders, user info, etc.)
 
-## 🚀 Cách Sử Dụng
+✅ Auto-replies for certain keywords
 
-### 1️⃣ Kiểm tra các lệnh khả dụng
-Sử dụng lệnh sau để xem danh sách các lệnh mà bot hỗ trợ:
+✅ GIF interactions for a more engaging chat
+
+✅ Moderation tools (kick, mute, message logs)
+
+## Getting Started
+
+Before using special features, you must activate the bot by accepting the Terms of Service.
+
+### Basic Commands
+
+**1. Get Help**  
+Use the following command to see available commands and features:
 ```
 >help
 ```
 
-### 2️⃣ Kích hoạt bot và chấp nhận điều khoản
-Trước khi sử dụng các tính năng đặc biệt, bạn cần chấp nhận Điều Khoản Dịch Vụ bằng lệnh:
+**2. Activate the Bot**  
+To access certain features, activate the bot with:
 ```
 >activate
 ```
 
-Sau khi chạy lệnh này, bạn có thể sử dụng tất cả các tính năng của bot một cách đầy đủ.
+After activation, you will be able to use more advanced commands.
+
+## Terms of Service
+
+By using WhiteCat, you agree to the bot's Terms of Service. If the terms change, users must re-run `>activate` to continue using certain special features. [Read the full Terms of Service](./Terms_of_Service.md).
 
 ---
 
-🎉 Cảm ơn bạn đã sử dụng WhiteCat! Nếu có bất kỳ thắc mắc nào, hãy tham gia server hỗ trợ của chúng tôi.
-
-![Thank You](./thank)
-
+Thank you for using WhiteCat!  
+![Thank You](./thank.gif)
