@@ -1,4 +1,4 @@
-![Bot Logo](./cat.png)
+![Bot Logo](./cat1.png)
 
 # Terms of Service
 
