@@ -1,5 +1,3 @@
-![Bot Logo](./cat1.png)
-
 # Terms of Service
 
 ## 1. Introduction
