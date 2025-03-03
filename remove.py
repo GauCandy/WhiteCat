@@ -79,5 +79,26 @@ class ConfirmButton(disnake.ui.Button):
 
         if self.confirm:
             try:
-
+                with open(self.guild_file_path, 'r', encoding='utf-8') as f:
+                    guild_data = json.load(f)
+                
+                command_exists = False
+                for command in guild_data["autoreply"]:
+                    if command["name"] == self.command_name:
+                        command_exists = True
+                        guild_data["autoreply"].remove(command)
+                        break
+                
+                if not command_exists:
+                    await interaction.message.edit(content=lang_get("command_not_found").format(reply=self.command_name), view=None)
+                    return
+                
+                with open(self.guild_file_path, 'w', encoding='utf-8') as f:
+                    json.dump(guild_data, f, ensure_ascii=False, indent=4)
+                
+                await interaction.message.edit(content=lang_get("command_deleted").format(reply=self.command_name), view=None)
+            except Exception as e:
+                print(f"Lỗi khi ghi file JSON của server: {e}")
+                await interaction.message.edit(content=lang_get("error_occurred"), view=None)
+        else:
             await interaction.message.edit(content=lang_get("delete_cancelled"), view=None)
