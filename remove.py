@@ -4,14 +4,14 @@ import json
 import os
 import lang_custom
 
-GUILD_DATA_PATH = './Data/guilds/{guild_id}.json'
+Guild = './Data/guilds/{guild_id}.json'
 
 
 
 async def execute(message: disnake.Message, bot: commands.Bot, lang: str):
-    lang_get = lang_custom.lang(lang).group("remove_reply").get_text  # Chỉ cần gọi lang_get sau khi thiết lập nhóm ngôn ngữ
+    lang_get = lang_custom.lang(lang).group("remove_reply").get_text  
     guild_id = str(message.guild.id)
-    guild_file_path = GUILD_DATA_PATH.format(guild_id=guild_id)
+    guild_file_path = Guild.format(guild_id=guild_id)
 
     if not os.path.exists(guild_file_path):
         await message.channel.send(lang_get("guild_data_not_found"))
