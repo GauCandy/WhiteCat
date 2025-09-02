@@ -1,9 +1,21 @@
 # Tài liệu Bot Discord
 
-Đây là một bot Discord toàn diện với các tính năng về kinh tế, giải trí, quản lý server, tiện ích, tính năng cao cấp và bảo mật. Dưới đây là tổng quan có tổ chức về các mô-đun và chức năng của bot.
+Bot Discord toàn diện với các tính năng cốt lõi (prefix, nhật ký, điều hành), bảo mật, quản lý server, tiện ích, kinh tế và giải trí. Các tính năng nền tảng được ưu tiên để đảm bảo hoạt động ổn định trước khi triển khai các tính năng giải trí.
 
 ## Mục lục
-1. [Kinh tế & Giải trí](#kinh-tế--giải-trí)
+1. [Hệ thống cốt lõi](#hệ-thống-cốt-lõi)
+   - [Tiền tố 🔧](#tiền-tố)
+   - [Nhật ký & Thống kê 📜](#nhật-ký--thống-kê)
+   - [Điều hành ⚖️](#điều-hành)
+   - [Vai trò & Hạng 🎭](#vai-trò--hạng)
+2. [Bảo mật 🚨](#bảo-mật)
+   - [Chống Raid](#chống-raid)
+   - [Danh tiếng](#danh-tiếng)
+3. [Quản lý Server](#quản-lý-server)
+   - [Embed & Tự động trả lời 👋](#embed--tự-động-trả-lời)
+   - [Kênh thoại tạm thời 🔊](#kênh-thoại-tạm-thời)
+   - [Giveaway 🎉](#giveaway)
+4. [Kinh tế & Giải trí](#kinh-tế--giải-trí)
    - [Tiền tệ 💰](#tiền-tệ)
    - [Nhà cửa 🏠](#nhà-cửa)
    - [Nuôi thú cưng & Trang trại 🌱🐶🐱](#nuôi-thú-cưng--trang-trại)
@@ -18,19 +30,87 @@
    - [Hồ sơ 👤](#hồ-sơ)
    - [Tín dụng 💳](#tín-dụng)
    - [Hành động & Biểu cảm 😄](#hành-động--biểu-cảm)
-2. [Quản lý Server](#quản-lý-server)
-   - [Giveaway 🎉](#giveaway)
-   - [Embed & Tự động trả lời 👋](#embed--tự-động-trả-lời)
-   - [Kênh thoại tạm thời 🔊](#kênh-thoại-tạm-thời)
-   - [Điều hành ⚖️](#điều-hành)
-   - [Vai trò & Hạng 🎭](#vai-trò--hạng)
-   - [Nhật ký & Thống kê 📜](#nhật-ký--thống-kê)
-   - [Tiền tố 🔧](#tiền-tố)
-3. [Tiện ích 🔧](#tiện-ích)
-4. [Cao cấp (VIP) 🌟](#cao-cấp-vip)
-5. [Bảo mật 🚨](#bảo-mật)
-   - [Chống Raid](#chống-raid)
-   - [Danh tiếng](#danh-tiếng)
+5. [Tiện ích 🔧](#tiện-ích)
+6. [Cao cấp (VIP) 🌟](#cao-cấp-vip)
+
+---
+
+## Hệ thống cốt lõi
+
+### Tiền tố 🔧
+- **Xem/thay đổi tiền tố**: Lệnh `prefix` (thông báo trực tiếp).
+- **Lưu trữ**: Cơ sở dữ liệu theo ID server, hỗ trợ rollback.
+- **Tích hợp**: Kích hoạt lệnh cho tất cả hệ thống.
+- **Ưu tiên**: Nền tảng cốt lõi, cần triển khai đầu tiên để các lệnh hoạt động.
+
+### Nhật ký & Thống kê 📜
+- **Nhật ký điều hành**: `case`, `modlogs`, `moderations` (lọc theo loại/thời gian).
+- **Thống kê mod**: `modstats` (số lượng case, thời gian trung bình).
+- **Thông tin server**: `serverinfo`, `membercount` (trực tuyến/ngoại tuyến).
+- **Nhật ký mời**: `inviteinfo` (số lần sử dụng/hết hạn).
+- **Điểm số**: CRUD điểm, tăng/giảm/đặt lại (theo server).
+- **Tích hợp**: Điều hành (cập nhật lý do), Tiện ích (thống kê, thời gian hoạt động).
+- **Ưu tiên**: Cần thiết để theo dõi và giám sát hoạt động server.
+
+### Điều hành ⚖️
+- **Cấm/Đá**: `ban`, `unban`, `kick`, `vkick` (lý do, thông báo DM).
+- **Tắt tiếng/Bật tiếng**: Tắt tiếng văn bản/thoại, `mute`, `unmute`, `timeout`, `untimeout` (tự động gỡ).
+- **Tắt âm/Bật âm**: Trạng thái thoại, xử lý kết nối lại.
+- **Cảnh cáo**: `warn`, `warn_remove`, `warnings` (đếm tăng dần).
+- **Xóa tin nhắn**: `clear` (xóa hàng loạt, lọc người dùng/bot).
+- **Khóa/Mở kênh**: `lock`, `unlock` (ghi đè quyền).
+- **Chế độ chậm**: Đặt thời gian, theo kênh.
+- **Di chuyển người dùng**: `move` (ID/đề cập kênh).
+- **Lý do**: Cập nhật lý do cho trường hợp điều hành.
+- **Tích hợp**: Nhật ký (modlogs, case), Chống Raid (tự động cấm), Vai trò (kiểm tra thứ bậc).
+- **Ưu tiên**: Đảm bảo server được quản lý an toàn và hiệu quả.
+
+### Vai trò & Hạng 🎭
+- **Quản lý vai trò**: Thêm, xóa, nhiều vai trò, `roleinfo` (hàng loạt ≤10).
+- **Hạng tự chọn**: `addrank`, `delrank`, `rank`, `ranks` (tự gán).
+- **Đổi màu vai trò**: `color`, `colors` (hex/danh sách, cache).
+- **Đổi biệt danh**: `setname` (ghi log điều hành).
+- **Tích hợp**: Cấp độ (tự động gán vai trò), Điều hành (vai trò tắt tiếng), Hồ sơ (hiển thị vai trò).
+- **Ưu tiên**: Cần thiết để quản lý quyền và phân quyền người dùng.
+
+---
+
+## Bảo mật 🚨
+
+### Chống Raid
+- **Phát hiện**: Tuổi tài khoản, số lượng tham gia, khung thời gian.
+- **Xử lý**: Tắt tiếng, cấm, tắt thông báo chào mừng.
+- **Ghi log**: Bắt đầu/kết thúc raid.
+- **Tích hợp**: Điều hành (tự động cấm), Embed (tắt chào mừng), Nhật ký (sự kiện raid).
+- **Ưu tiên**: Bảo vệ server khỏi các cuộc tấn công hàng loạt.
+
+### Danh tiếng
+- **Trao điểm danh tiếng**: 1 lần/24h, giao dịch độc lập.
+- **Cache & thời gian**: Redis, ngăn chặn spam.
+- **Tích hợp**: Hồ sơ (hiển thị danh tiếng), Cấp độ (tùy chọn chuyển danh tiếng thành XP).
+
+---
+
+## Quản lý Server
+
+### Embed & Tự động trả lời 👋
+- **Chào mừng**: Embed chào mừng, tự động gán vai trò.
+- **Tạm biệt**: Ghi log rời server.
+- **Thông báo boost**: Tin nhắn cảm ơn.
+- **Tùy chỉnh embed**: Màu sắc, hình ảnh.
+- **Tích hợp**: Nhật ký (ghi sự kiện), Chống Raid (tắt chào mừng khi raid).
+
+### Kênh thoại tạm thời 🔊
+- **Quản lý phòng thoại**: Cho phép, bitrate, chiếm quyền, cấm, đá, giới hạn, khóa.
+- **Di chuyển người dùng**: `voicemove` (kiểm tra quyền).
+- **Tích hợp**: Điều hành (đá, di chuyển), Nhật ký (sự kiện thoại).
+
+### Giveaway 🎉
+- **Flash giveaway**: Rút thăm nhanh.
+- **Giveaway thường**: Tham gia qua phản ứng.
+- **Vai trò bắt buộc**: Lọc người tham gia.
+- **Tùy chỉnh admin**: Phần thưởng, thời gian.
+- **Tích hợp**: Tiền tệ (phần thưởng credits), Embed (thông báo).
 
 ---
 
@@ -125,61 +205,6 @@
 
 ---
 
-## Quản lý Server
-
-### Giveaway 🎉
-- **Flash giveaway**: Rút thăm nhanh.
-- **Giveaway thường**: Tham gia qua phản ứng.
-- **Vai trò bắt buộc**: Lọc người tham gia.
-- **Tùy chỉnh admin**: Phần thưởng, thời gian.
-- **Tích hợp**: Tiền tệ (phần thưởng credits), Embed (thông báo).
-
-### Embed & Tự động trả lời 👋
-- **Chào mừng**: Embed chào mừng, tự động gán vai trò.
-- **Tạm biệt**: Ghi log rời server.
-- **Thông báo boost**: Tin nhắn cảm ơn.
-- **Tùy chỉnh embed**: Màu sắc, hình ảnh.
-- **Tích hợp**: Nhật ký (ghi sự kiện), Chống Raid (tắt chào mừng khi raid).
-
-### Kênh thoại tạm thời 🔊
-- **Quản lý phòng thoại**: Cho phép, bitrate, chiếm quyền, cấm, đá, giới hạn, khóa.
-- **Di chuyển người dùng**: `voicemove` (kiểm tra quyền).
-- **Tích hợp**: Điều hành (đá, di chuyển), Nhật ký (sự kiện thoại).
-
-### Điều hành ⚖️
-- **Cấm/Đá**: `ban`, `unban`, `kick`, `vkick` (lý do, thông báo DM).
-- **Tắt tiếng/Bật tiếng**: Tắt tiếng văn bản/thoại, bật tiếng, timeout/untimeout (tự động gỡ).
-- **Tắt âm/Bật âm**: Trạng thái thoại, xử lý kết nối lại.
-- **Cảnh cáo**: `warn`, `warn_remove`, `warnings` (đếm tăng dần).
-- **Xóa tin nhắn**: `clear` (xóa hàng loạt, lọc người dùng/bot).
-- **Khóa/Mở kênh**: `lock`, `unlock` (ghi đè quyền).
-- **Chế độ chậm**: Đặt thời gian, theo kênh.
-- **Di chuyển người dùng**: `move` (ID/đề cập kênh).
-- **Lý do**: Cập nhật lý do cho trường hợp điều hành.
-- **Tích hợp**: Nhật ký (modlogs, case), Chống Raid (tự động cấm), Vai trò (kiểm tra thứ bậc).
-
-### Vai trò & Hạng 🎭
-- **Quản lý vai trò**: Thêm, xóa, nhiều vai trò, `roleinfo` (hàng loạt ≤10).
-- **Hạng tự chọn**: `addrank`, `delrank`, `rank`, `ranks` (tự gán).
-- **Đổi màu vai trò**: `color`, `colors` (hex/danh sách, cache).
-- **Đổi biệt danh**: `setname` (ghi log điều hành).
-- **Tích hợp**: Cấp độ (tự động gán vai trò), Điều hành (vai trò tắt tiếng), Hồ sơ (hiển thị vai trò).
-
-### Nhật ký & Thống kê 📜
-- **Nhật ký điều hành**: `case`, `modlogs`, `moderations` (lọc theo loại/thời gian).
-- **Thống kê mod**: `modstats` (số lượng case, thời gian trung bình).
-- **Thông tin server**: `serverinfo`, `membercount` (trực tuyến/ngoại tuyến).
-- **Nhật ký mời**: `inviteinfo` (số lần sử dụng/hết hạn).
-- **Điểm số**: CRUD điểm, tăng/giảm/đặt lại (theo server).
-- **Tích hợp**: Điều hành (cập nhật lý do), Tiện ích (thống kê, thời gian hoạt động).
-
-### Tiền tố 🔧
-- **Xem/thay đổi tiền tố**: `prefix` (thông báo trực tiếp).
-- **Lưu trong DB theo ID server**: Hỗ trợ rollback.
-- **Tích hợp**: Tất cả hệ thống (kích hoạt lệnh).
-
----
-
 ## Tiện ích 🔧
 - **Máy tính**: Đánh giá biểu thức toán học, thực thi an toàn.
 - **Thông tin server**: `serverinfo`, `membercount` (biểu tượng thu nhỏ).
@@ -217,18 +242,3 @@
 - **Tùy chỉnh bot**: `vip avatar`, `vip username`, `vip status` (xử lý giới hạn tốc độ).
 - **Chuyển quyền**: `vip transfer` (OAuth, nhật ký kiểm tra).
 - **Tích hợp**: Tín dụng (nạp VIP), Tất cả hệ thống (mở khóa tính năng).
-
----
-
-## Bảo mật 🚨
-
-### Chống Raid
-- **Phát hiện**: Tuổi tài khoản, số lượng tham gia, khung thời gian.
-- **Xử lý**: Tắt tiếng, cấm, tắt thông báo chào mừng.
-- **Ghi log**: Bắt đầu/kết thúc raid.
-- **Tích hợp**: Điều hành (tự động cấm), Embed (tắt chào mừng), Nhật ký (sự kiện raid).
-
-### Danh tiếng
-- **Trao điểm danh tiếng**: 1 lần/24h, giao dịch độc lập.
-- **Cache & thời gian**: Redis, ngăn chặn spam.
-- **Tích hợp**: Hồ sơ (hiển thị danh tiếng), Cấp độ (tùy chọn chuyển danh tiếng thành XP).
