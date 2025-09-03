@@ -1,6 +1,5 @@
 ## Mục Lục
 
-- [Database Driver](#database-driver)
 - [Tổng Hợp Tài Liệu (VN)](#tổng-hợp-tài-liệu-vn)
   - [language.js — i18n](#languagejs--trình-nạp-locale-và-trợ-lý-i18n)
   - [prefix.js — Prefix](#prefixjs--khung-lệnh-dựa-trên-prefix)
@@ -10,24 +9,16 @@
 - [Điều Khoản Sử Dụng (Terms Gate)](#điều-khoản-sử-dụng-terms-gate)
 - [CatBox — Biến dùng chung](#catbox--biến-dùng-chung)
 - [Ví (Wallet) và Log giao dịch](#ví-wallet-và-log-giao-dịch)
+- [Database Driver](#database-driver)
 - [Thay đổi CSDL liên quan](#thay-đổi-csdl-liên-quan)
 
-## Database Driver
-- Driver: dự án dùng lớp Driver database có thể hoán đổi giữa MariaDB (mặc định) và MySQL (mysql2).
-- Cấu hình: thiết lập biến môi trường `DB_CLIENT` = `mariadb` | `mysql2` trong `.env`.
-- Chuẩn sử dụng: mọi nơi trong code chỉ dùng API thống nhất `pool.query(sql, params)` và `pool.getConnection()`/`release()` (không gọi trực tiếp phương thức riêng của từng driver).
-- Số lớn: với mysql2 bật `supportBigNumbers` + `bigNumberStrings`; với mariadb giữ `bigIntAsNumber=false` để trả về chuỗi, tránh mất chính xác.
-- Đóng kết nối: dùng `pool.end()` (wrapper đã cung cấp `closePool()`), không gọi API driver thô để tránh nhầm lẫn.
-
----
-
-# Tổng Hợp Tài Liệu (VN)
+## Tổng Hợp Tài Liệu (VN)
 
 Tài liệu này tập hợp và dịch sang tiếng Việt các nội dung trong thư mục `docs`: `language.md`, `prefix.md`, `slash.md`, và `time.md`.
 
 ---
 
-## language.js — Trình nạp locale và trợ lý i18n
+### language.js — Trình nạp locale và trợ lý i18n
 
 - Tổng quan: Nạp các tệp locale, hợp nhất nội dung, và cung cấp các hàm trợ giúp để tra cứu/định dạng chuỗi với cơ chế dự phòng an toàn.
 
@@ -68,7 +59,7 @@ Tài liệu này tập hợp và dịch sang tiếng Việt các nội dung tron
 
 ---
 
-## prefix.js — Khung lệnh dựa trên prefix
+### prefix.js — Khung lệnh dựa trên prefix
 
 - Tổng quan: Nạp lệnh dựa trên prefix, xác định prefix theo guild, cung cấp context phong phú, xử lý quyền và lỗi.
 
@@ -116,7 +107,7 @@ Tài liệu này tập hợp và dịch sang tiếng Việt các nội dung tron
 
 ---
 
-## slash.js — Trình nạp và xử lý Slash Command
+### slash.js — Trình nạp và xử lý Slash Command
 
 - Tổng quan: Nạp động slash commands, cung cấp hàm đồng bộ, tiêm context, và xử lý quyền cũng như lỗi hiển thị tạm thời (ephemeral).
 
@@ -161,7 +152,7 @@ Tài liệu này tập hợp và dịch sang tiếng Việt các nội dung tron
 
 ---
 
-## time.js — Bộ lập lịch công việc
+### time.js — Bộ lập lịch công việc
 
 - Tổng quan: Nạp các module theo thời gian và lập lịch chạy công việc theo chu kỳ cố định, thời điểm trong ngày, hoặc tại một ngày/giờ cụ thể.
 
@@ -244,6 +235,17 @@ Tài liệu này tập hợp và dịch sang tiếng Việt các nội dung tron
   - `debitGuild(guildId, amount, currency='wcoin', note?)` (có kiểm tra đủ tiền)
   - `transfer({type:'user'|'guild', id}, {type:'user'|'guild', id}, amount, currency='wcoin', note?)`
 - Thiết kế ưu tiên an toàn cạnh tranh: mọi phép cộng/trừ chạy trong TRANSACTION, tính toán tại DB bằng `UPDATE ... SET col = col ± ?` và kiểm tra đủ số dư via `AND col >= ?`.
+
+---
+
+
+
+## Database Driver
+- Driver: dự án dùng lớp Driver database có thể hoán đổi giữa MariaDB (mặc định) và MySQL (mysql2).
+- Cấu hình: thiết lập biến môi trường `DB_CLIENT` = `mariadb` | `mysql2` trong `.env`.
+- Chuẩn sử dụng: mọi nơi trong code chỉ dùng API thống nhất `pool.query(sql, params)` và `pool.getConnection()`/`release()` (không gọi trực tiếp phương thức riêng của từng driver).
+- Số lớn: với mysql2 bật `supportBigNumbers` + `bigNumberStrings`; với mariadb giữ `bigIntAsNumber=false` để trả về chuỗi, tránh mất chính xác.
+- Đóng kết nối: dùng `pool.end()` (wrapper đã cung cấp `closePool()`), không gọi API driver thô để tránh nhầm lẫn.
 
 ---
 
