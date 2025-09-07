@@ -1,98 +1,365 @@
-**Overview**
-- Discord bot with prefix and slash commands, multi-language (i18n), Terms gate, and a persistent Giveaway system with admin tools and a time worker.
+## Mục Lục
 
-**Requirements**
-- Node.js 18+
-- MariaDB or MySQL
-- Discord Bot Token
+- [Tổng Hợp Tài Liệu (VN)](#tổng-hợp-tài-liệu-vn)
+  - [language.js — i18n](#languagejs--trình-nạp-locale-và-trợ-lý-i18n)
+  - [prefix.js — Prefix](#prefixjs--khung-lệnh-dựa-trên-prefix)
+  - [slash.js — Slash](#slashjs--trình-nạp-và-xử-lý-slash-command)
+  - [time.js — Scheduler](#timejs--bộ-lập-lịch-công-việc)
+- [Event — Khung xử lý theo sự kiện](#event--khung-xử-lý-theo-sự-kiện)
+- [Điều Khoản Sử Dụng (Terms Gate)](#điều-khoản-sử-dụng-terms-gate)
+- [CatBox — Biến dùng chung](#catbox--biến-dùng-chung)
+- [Ví (Wallet) và Log giao dịch](#ví-wallet-và-log-giao-dịch)
+- [Database Driver](#database-driver)
+- [Thay đổi CSDL liên quan](#thay-đổi-csdl-liên-quan)
 
-**Install**
-- Create `.env` with:
-  - `TOKEN=your_discord_bot_token`
-  - `DB_HOST=127.0.0.1`
-  - `DB_USER=root`
-  - `DB_PASS=...`
-  - `DB_NAME=whitecatdata`
-  - Optional: `DB_CLIENT=mariadb|mysql2`, `DEFAULT_LANG=en-US`, `PREFIX=!`
-- Install deps: `npm i discord.js mariadb mysql2 yaml dotenv`
+## Tổng Hợp Tài Liệu (VN)
 
-**Configure**
-- `src/config.json`
-  - `app.prefix`: default prefix for prefix commands
-  - `app.defaultLanguage`: default i18n (e.g. `en-US`)
-  - `app.ownerIds`: array of owner user IDs
-  - `database.client`: `mariadb` or `mysql2`, `poolMax`: pool size
+Tài liệu này tập hợp và dịch sang tiếng Việt các nội dung trong thư mục `docs`: `language.md`, `prefix.md`, `slash.md`, và `time.md`.
 
-**Run**
-- `node src/bot.js` (or `bash run.sh`)
-- Startup does:
-  - DB connectivity check and table ensure
-  - Seed current guilds into `guilds`
-  - Start time jobs, prefix system, slash system, and event handlers
+---
 
-**Slash Commands**
-- `avatar`: Show user/server avatar with toggle buttons
-- `banner`: Show user/server banner with toggle buttons
-- `cgiveway`: Create a giveaway via modal
-  - Modal (uses user language): Duration (`10m`, `2h`, `1d2h`), Winners (default 1), Prize, Description
-  - Posts embed (uses guild language): Ends, Hosted by, Entries, Winners, created timestamp
-  - Buttons: `Join`, `⚙️` Settings (admin-only panel, ephemeral)
+### language.js — Trình nạp locale và trợ lý i18n
 
-**Prefix Commands**
-- `!avatar` (alias `!av`)
-- `!banner` (alias `!baner`)
-- `!sync` / `!sync guild` (owner-only): register slash globally or for current guild
+- Tổng quan: Nạp các tệp locale, hợp nhất nội dung, và cung cấp các hàm trợ giúp để tra cứu/định dạng chuỗi với cơ chế dự phòng an toàn.
 
-**Giveaway Flow**
-- Create: `/cgiveway` -> modal -> embed with `Join` + `⚙️`
-- Join: users click `Join`, Entries increases live
-- Settings (admin-only, ephemeral):
-  - `End` now
-  - `Edit Time` (+/- like `+10m`, `-5m`)
-  - `Delete` giveaway (marks cancelled and removes message when possible)
-- Auto end: time worker runs every 30s to end expired giveaways
-- On end:
-  - Original embed keeps content, all buttons are removed
-  - A new Winners embed is posted with timestamp, first-winner avatar, and two reroll buttons:
-    - `🔁 reroll`: reroll excluding currently selected winners (shrinks pool)
-    - `👑 keep`: reroll keeping previous winners in pool
+**Bố cục thư mục**
+- `src/language/*.yml|yaml`: tên tệp (ví dụ `en.yml`) trở thành mã ngôn ngữ.
+- Thư mục con theo ngôn ngữ: `src/language/<lang>/*.yml` được nhóm theo tên tệp và hợp nhất vào ngôn ngữ đó.
+- Dự phòng JSON: nếu không có package `yaml`, bộ phân tích sẽ thử định dạng JSON.
 
-**Data Model (Core)**
-- `guilds(guild_id PK UNIQUE, prefix, language)`
-- `users(user_id UNIQUE, term TINYINT(1), join_at TIMESTAMP)`
-- `giveaways(id, guild_id, channel_id, message_id, winners_message_id, creator_id, prize, description, winners_count, allow_multi_win, start_time, end_time, status, winner_ids JSON)`
-- `giveaway_entries(id, giveaway_id, user_id, joined_at)` (unique (giveaway_id, user_id))
-- `giveaway_excluded(giveaway_id, user_id)` (accumulated excluded winners for reroll-exclude)
+**API**
+- `initLanguage({ dir, defaultLang, watch })`
+  - `dir`: thư mục gốc (mặc định `src/language`).
+  - `defaultLang`: ngôn ngữ mặc định ban đầu (có thể lấy từ biến môi trường `DEFAULT_LANG`), mặc định `en`.
+  - `watch`: khi `true`, theo dõi thư mục và tự tải lại khi có thay đổi.
+  - Trả về `{ t, tg, has, getAvailableLanguages, setDefaultLang }`.
+- `t(lang, pathOrGroup, maybeKey?, vars?)`
+  - Tra cứu khóa lồng nhau. Ví dụ: `t('vi', 'errors.not_found')` hoặc `t('vi', 'errors', 'not_found')`.
+  - Placeholder: `{name}` hoặc `{{user.id}}` sẽ được thay bằng giá trị trong `vars`.
+  - Dự phòng: nếu thiếu khóa trong `lang`, sẽ thử ở ngôn ngữ mặc định; nếu vẫn thiếu, trả về chính đường dẫn khóa.
+- `tg(lang, group, key, vars?)`: alias rõ ràng cho `t` theo cặp nhóm + khóa.
+- `has(lang, groupOrPath, key?)`: kiểm tra tồn tại (boolean).
+- `getAvailableLanguages()`: trả về danh sách mã ngôn ngữ đã nạp.
+- `setDefaultLang(lang)`: đổi ngôn ngữ mặc định khi đang chạy.
 
-**i18n & Terms**
-- Language files: `src/language/en-US.yml`, `src/language/vi.yml`
-- Default language: `config.app.defaultLanguage` or `DEFAULT_LANG` (fallback `en-US`)
-- Slash UI (modals/ephemeral): uses user’s Discord locale (`interaction.locale`)
-- Public guild content (embeds): uses guild language from DB or guild locale
-- Terms gate:
-  - Prefix: uses guild language
-  - Slash: uses user language
-  - Terms image picker supports `en-US.png`, `en-us.png`, `en.png` with sensible fallbacks
+**Quy tắc hợp nhất**
+- Tệp cấp cao nhất cho một ngôn ngữ sẽ được nạp trước, sau đó là các nhóm theo tệp trong thư mục con của ngôn ngữ đó; tất cả được deep-merge.
+- Đối tượng merge đệ quy; mảng/giá trị nguyên thủy sẽ ghi đè.
 
-**Folder Structure**
-- `src/command/prefix/*`: prefix commands
-- `src/command/slash/*`: slash commands
-- `src/function/*`: core systems (prefix, slash, event, time, language, wallet, ...)
-- `src/module/event/*`: interaction handlers (toggles, giveaway admin, terms, ...)
-- `src/module/time/*`: scheduled jobs (giveaway worker)
-- `src/language/*`: i18n (YAML)
-- `src/image/terms/*`: Terms images
+**Theo dõi (watching)**
+- Khi `watch: true`, dùng `fs.watch` ở thư mục gốc và từng thư mục theo ngôn ngữ; khi có thay đổi, nạp lại toàn bộ locales.
 
-**Common Tasks**
-- Sync slash: `!sync` (global) or `!sync guild` (current guild)
-- Change per-guild prefix: use prefix ctx helper `setGuildPrefix`
-- Set per-guild language: use prefix ctx helper `setGuildLanguage`
+**Hành vi dự phòng**
+- `resolveLang`: nếu `lang` yêu cầu tồn tại thì dùng, ngược lại dùng `defaultLang` (mặc định `en`).
+- `t()` sẽ fallback sang ngôn ngữ mặc định nếu khóa thiếu ở ngôn ngữ được yêu cầu.
 
-**Troubleshooting**
-- FK error on giveaways: ensure guild seeding ran (startup) or the bot joined event fired
-- Terms image missing: ensure `src/image/terms/en-US.png` exists (fallbacks apply)
-- Missing permissions: channel needs `ViewChannel`, `SendMessages`, `SendMessagesInThreads`
+**Lỗi & Nhật ký**
+- Lỗi phân tích YAML được log kèm đường dẫn tệp và thông báo lỗi.
+- Nếu package `yaml` không cài, sẽ log cảnh báo một lần và chấp nhận JSON.
 
-**License**
-- Internal project; no license header included by default
+---
 
+### prefix.js — Khung lệnh dựa trên prefix
+
+- Tổng quan: Nạp lệnh dựa trên prefix, xác định prefix theo guild, cung cấp context phong phú, xử lý quyền và lỗi.
+
+**Nạp lệnh**
+- Quét đệ quy thư mục `src/command/prefix`.
+- Bỏ qua tệp/thư mục bắt đầu bằng `_`.
+- Hỗ trợ module xuất ra:
+  - Một object `{ name, aliases?, description?, run(ctx) }`
+  - Một mảng các object dạng trên
+  - Một hàm `module.exports = async (ctx) => {}` (tự đặt tên theo tên tệp)
+
+**Xác định prefix**
+- Các prefix hiệu lực cho mỗi tin nhắn:
+  - Từ `src/config.json: app.prefix` (hoặc ENV `PREFIX`, mặc định `!`).
+  - Ghi đè theo guild từ DB `guilds.prefix` (có cache). Cả hai được xét; cái khớp đầu tiên sẽ dùng.
+- Hàm trợ giúp:
+  - `updateGuildPrefix(guildId, newPrefix)`: lưu vào DB và cache.
+  - `getGuildPrefixById(guildId)`: lấy từ DB (có cache).
+
+**Xác định ngôn ngữ (Guild)**
+- Trong guild, `ctx.language` lấy từ `guilds.language` trong DB nếu có; nếu không thì `message.guild.preferredLocale`.
+- Ở DM, lệnh prefix không chạy; `language` là `null`.
+- Có sẵn các trợ lý từ language.js: `t, tg, has, setDefaultLang`.
+
+**Context (`ctx`) truyền vào lệnh**
+- `client`, `message`, `args`, `content`, `command`
+- `prefix`, `allPrefixes`
+- `env`, `db` (adapter kết nối DB dạng pool)
+- `ownerIds` (từ `config.json.app.ownerIds`)
+- `language`, `t`, `tg`, `has`, `setDefaultLang`
+- Trợ lý guild: `setGuildPrefix`, `getGuildPrefix`, `getGuildPrefixById`
+- Trợ lý ngôn ngữ: `setGuildLanguage`, `getGuildLanguage`, `refreshGuildLanguage`
+
+**Kiểm tra quyền (Guild)**
+- Trước khi chạy lệnh, kiểm tra bot có: `ViewChannel`, `SendMessages`, `SendMessagesInThreads` trong kênh.
+- Nếu thiếu, bỏ qua lệnh một cách im lặng (tránh spam). Khi `debug.prefix=true`, sẽ log cảnh báo.
+
+**Xử lý lỗi**
+- Ẩn các lỗi phía người dùng khi `debug.prefix` không bật:
+  - Missing Permissions (50013), Unknown Message (10008), Cannot DM (50007), Unknown Channel (10003), Missing Access (50001)
+- Với lỗi khác: ghi log và thử phản hồi bằng thông báo lỗi chung.
+
+**Debug**
+- Điều khiển qua `src/config.json: debug.prefix`.
+
+---
+
+### slash.js — Trình nạp và xử lý Slash Command
+
+- Tổng quan: Nạp động slash commands, cung cấp hàm đồng bộ, tiêm context, và xử lý quyền cũng như lỗi hiển thị tạm thời (ephemeral).
+
+**Nạp lệnh**
+- Quét đệ quy `src/command/slash` (bỏ qua tên bắt đầu bằng `_`).
+- Các định dạng module hỗ trợ:
+  - Object `{ data: { name, description, options?, contexts?, integrationTypes?, dmPermission? }, run(ctx) }`
+  - Hoặc `{ name, description, options?, run }` (được chuẩn hóa về `data`).
+  - Mảng các module ở trên.
+
+**Hàm đồng bộ**
+- `syncGuildCommands(client, guildId)`: đặt bộ lệnh cho một guild.
+- `syncGlobalCommands(client)`: đặt lệnh ở cấp ứng dụng (có thể mất vài phút để đồng bộ).
+
+**Context (`ctx`) truyền vào**
+- `client`, `interaction`, `env`, `db` (pool DB)
+- `ownerIds` (từ `config.json.app.ownerIds`)
+- `language`:
+  - Ngữ cảnh DM/cài đặt cho người dùng (context 1 hoặc 2, hoặc không ở trong guild): dùng `interaction.locale` (ngôn ngữ người dùng)
+  - Trong guild: lấy `guilds.language` từ DB nếu có; nếu không thì `interaction.guildLocale`/`guild.preferredLocale`
+- Trợ lý i18n từ language.js: `t`, `tg`, `has`, `setDefaultLang`
+
+**Kiểm tra quyền (Guild)**
+- Trước khi chạy, kiểm tra bot có: `ViewChannel`, `SendMessages`, `SendMessagesInThreads` trong kênh.
+- Nếu thiếu: trả lời cảnh báo ephemeral một lần (`flags: 64`) rồi thoát.
+
+**Xử lý lỗi**
+- Ẩn các lỗi phía người dùng khi `debug.slash` không bật.
+- Thiếu quyền (50013): trả lời cảnh báo ephemeral.
+- Lỗi khác ở chế độ debug: trả lời lỗi chung ở dạng ephemeral.
+
+**Ephemeral và Flags**
+- Dùng `flags: 64` để trả lời ephemeral. `4096` dùng để ẩn thông báo ping (không ẩn nội dung).
+- Mẫu xử lý hoàn toàn ephemeral: `deferReply({ flags: 64 })` → `editReply()` → có thể `followUp({ flags: 64 })`.
+
+**Cài đặt theo ngữ cảnh (User-install / Contexts)**
+- `data.contexts` và `data.integrationTypes` quyết định nơi lệnh xuất hiện.
+- Ví dụ chỉ cho cài đặt người dùng trong kênh riêng tư: `contexts: [2]`, `integrationTypes: [1]`.
+
+**Debug**
+- Điều khiển qua `src/config.json: debug.slash`.
+
+---
+
+### time.js — Bộ lập lịch công việc
+
+- Tổng quan: Nạp các module theo thời gian và lập lịch chạy công việc theo chu kỳ cố định, thời điểm trong ngày, hoặc tại một ngày/giờ cụ thể.
+
+**Nạp module**
+- Tìm trong `src/module/time` các tệp `.js` (bỏ qua tệp bắt đầu bằng `_`).
+- Mỗi tệp có thể export:
+  - Một hàm `(ctx) => {}` chạy khi lịch kích hoạt, hoặc
+  - Một object có `run(ctx)` hoặc `onTick(ctx)`, kèm theo các trường lập lịch.
+
+**Trường lập lịch**
+- `every` / `interval`: chạy định kỳ.
+  - Số = mili-giây.
+  - Chuỗi rút gọn: `'second'|'minute'|'hour'` (căn mốc), hoặc `'5s'|'10m'|'2h'|'250ms'`.
+  - Object: `{ hours, minutes, seconds, ms }`.
+  - `immediate: true` để chạy một lần ngay trước khi bắt đầu chu kỳ.
+- `at`: mảng thời điểm trong ngày, `'HH:mm'` hoặc `'HH:mm:ss'`. Chạy hằng ngày vào các thời điểm đó.
+- `date` / `atDate`: lên lịch chạy một lần tại `Date` hoặc timestamp. Với khoảng trễ dài (> 24 ngày) sẽ có bộ kiểm tra hằng ngày để cài lại timeout.
+- `enabled`: nếu `false` thì bỏ qua job.
+
+**Căn mốc (alignment)**
+- Với `'second'|'minute'|'hour'`, lần chạy đầu tiên căn mốc tới ranh giới kế tiếp rồi lặp theo chu kỳ cố định.
+
+**Context (`ctx`) cung cấp cho job**
+- `client` (Discord client), `env` (process env), `now: () => new Date()`
+- `db` (adapter pool DB) nếu có.
+
+**Điều khiển khi chạy**
+- `initTimeJobs(client, extra?)`: nạp module và lên lịch công việc, mỗi process chỉ khởi tạo một lần.
+- `stopTimeJobs()`: xóa tất cả timer/interval và đánh dấu scheduler đã dừng.
+
+**Nhật ký & lỗi**
+- Mỗi handle được log kèm lần chạy kế tiếp.
+- Ngoại lệ trong job được bắt và log; scheduler vẫn tiếp tục hoạt động.
+
+
+---
+
+## Event — Khung xử lý theo sự kiện
+
+- Nạp module từ `src/module/event` (đệ quy, bỏ `_*.js`).
+- Mỗi module: `{ on: 'messageCreate'|'interactionCreate'|..., once?, enabled?, priority?, filter?, run(ctx) }`.
+- Context chung: `client`, `env`, `db`, `ownerIds`, i18n (`t/tg/has/setDefaultLang`), `wallet` helpers, `language` gợi ý theo payload.
+- Ví dụ có sẵn: `message_logger.js` (in log mọi tin nhắn), `broadcast_all_channels.js` (demo broadcast) và `accept_term.js` (xử lý nút đồng ý điều khoản).
+
+---
+
+## Điều Khoản Sử Dụng (Terms Gate)
+
+- Bảng `users` có cột `term` (0/1, mặc định 0) và `join_at` (thời điểm chấp nhận).
+- Khi chạy lệnh prefix/slash, nếu `term=0` bot sẽ gửi embed + nút (ảnh theo ngôn ngữ từ `src/image/terms/`).
+- Nút có `custom_id`: `accept-terms:<userId>:<epochSecs>`. Event `accept_term.js` ghi nhận và cập nhật DB (UPSERT) để `term=1`, `join_at` từ epoch.
+- i18n cho tiêu đề/mô tả/nút: group `terms` trong `src/language/en*.yml`, `src/language/vi.yml`.
+
+---
+
+## CatBox — Biến dùng chung
+
+- File: `src/cache/cat_box.js`
+- Cấu trúc:
+  - `app`: cấu hình, `prefix`, `ownerIds`, `startedAt`.
+  - `flags.debug`: `{ prefix, slash }` và có thể mở rộng.
+  - `guild[gid]`: cache `prefix`, `language`.
+  - `user[uid]`: cache `term` (đã chấp nhận điều khoản hay chưa).
+- Mục tiêu: chia sẻ cache giữa prefix/slash/event/time, giảm truy vấn lặp.
+
+---
+
+## Ví (Wallet) và Log giao dịch
+
+- Bảng:
+  - `user_wallet(user_id PK, wcoin BIGINT)` — FK → `users(user_id)` ON DELETE CASCADE.
+  - `guild_wallet(guild_id PK, wcoin BIGINT)` — FK → `guilds(guild_id)` ON DELETE CASCADE.
+  - `log_wallet` — lưu giao dịch: `from_user?`, `to_user?`, `to_guild?`, `currency`, `amount`, `status` (`pending|success|failed`), `message`, timestamps.
+- Helpers dùng chung ở `ctx.wallet` (đã được tiêm vào prefix/slash/event/time):
+  - `getUserBalance(userId, currency='wcoin')`
+  - `getGuildBalance(guildId, currency='wcoin')`
+  - `creditUser(userId, amount, currency='wcoin', note?)`
+  - `creditGuild(guildId, amount, currency='wcoin', note?)`
+  - `debitUser(userId, amount, currency='wcoin', note?)` (có kiểm tra đủ tiền)
+  - `debitGuild(guildId, amount, currency='wcoin', note?)` (có kiểm tra đủ tiền)
+  - `transfer({type:'user'|'guild', id}, {type:'user'|'guild', id}, amount, currency='wcoin', note?)`
+- Thiết kế ưu tiên an toàn cạnh tranh: mọi phép cộng/trừ chạy trong TRANSACTION, tính toán tại DB bằng `UPDATE ... SET col = col ± ?` và kiểm tra đủ số dư via `AND col >= ?`.
+
+---
+
+
+
+## Database Driver
+- Driver: dự án dùng lớp Driver database có thể hoán đổi giữa MariaDB (mặc định) và MySQL (mysql2).
+- Cấu hình: thiết lập biến môi trường `DB_CLIENT` = `mariadb` | `mysql2` trong `.env`.
+- Chuẩn sử dụng: mọi nơi trong code chỉ dùng API thống nhất `pool.query(sql, params)` và `pool.getConnection()`/`release()` (không gọi trực tiếp phương thức riêng của từng driver).
+- Số lớn: với mysql2 bật `supportBigNumbers` + `bigNumberStrings`; với mariadb giữ `bigIntAsNumber=false` để trả về chuỗi, tránh mất chính xác.
+- Đóng kết nối: dùng `pool.end()` (wrapper đã cung cấp `closePool()`), không gọi API driver thô để tránh nhầm lẫn.
+
+---
+
+## Thay đổi CSDL liên quan
+
+- `guilds.language` cho phép `NULL`, không default.
+- Thêm bảng `users(term TINYINT(1) DEFAULT 0, join_at TIMESTAMP NULL)`.
+- Thêm `user_wallet`, `guild_wallet`, `log_wallet` như mô tả ở trên.
+
+---
+
+## Giveaway — Hướng Dẫn Sử Dụng Chi Tiết
+
+Tính năng Giveaway bao gồm tạo bằng Slash, tham gia bằng nút, panel quản trị (⚙️), kết thúc tự động/bằng tay, thông báo người thắng riêng và nút Reroll dạng “🔁 reroll / 👑 keep”.
+
+### Tạo Giveaway (Slash `/cgiveway`)
+- Tùy chọn: `multiwin` (mặc định: false) — cho phép một người có thể trúng nhiều lần.
+- Modal (hiển thị theo ngôn ngữ người dùng):
+  - Thời lượng: nhập `10m`, `2h`, `1d2h` (nếu chỉ nhập số thì hiểu là phút)
+  - Số người trúng: mặc định điền sẵn `1`
+  - Phần thưởng: mô tả ngắn
+  - Mô tả: tùy chọn
+- Sau khi gửi modal, bot đăng một embed (ngôn ngữ máy chủ) có dạng:
+
+```
+Ends: <t:...:R> ( <t:...:F> )
+Hosted by: @User
+Entries: 0
+Winners: N
+```
+
+- Ở chân embed có timestamp (Discord tự render “Hôm nay lúc …”).
+- Kèm 2 nút: `Join` và `⚙️` (Settings — chỉ icon bánh răng, không chữ).
+
+### Tham Gia (Join)
+- Người dùng bấm `Join` để tham gia; bot sẽ tăng “Entries” trực tiếp trong embed gốc.
+
+### Panel Quản Trị (⚙️ — Chỉ Admin)
+- Chỉ admin/ManageGuild/creator/owner (từ `config.app.ownerIds`) mới dùng được; người thường bấm sẽ được báo “Chỉ admin mới được dùng nút này.” (ephemeral).
+- Panel hiển thị:
+  - Prize, Winners (+ “(multi)” nếu bật)
+  - Ends: `<t:...:F> ( <t:...:R> )`
+  - Participants (Entries), Host, Status
+- Nút chức năng (ephemeral):
+  - `End`: kết thúc ngay, chọn winners và công bố
+  - `Edit Time`: mở modal nhập delta `+10m`, `-5m` để đẩy lùi hoặc rút ngắn thời gian
+  - `Delete`: đánh dấu hủy và cố gắng xóa message
+
+### Kết Thúc & Thông Báo Người Thắng
+- Worker thời gian chạy 30 giây/lần sẽ tự kết thúc các giveaway đã hết hạn.
+- Khi kết thúc (tự động hoặc bấm “End”):
+  - Tin nhắn gốc: GỠ tất cả nút (giữ nội dung nguyên) để tránh tiếp tục tham gia
+  - Bot đăng MỘT tin nhắn mới công bố winners, kèm:
+    - Tiêu đề giữ như embed gốc (vd “Giveaway — Nitro”)
+    - Mô tả: “🎉 Winners: @user1, @user2, …” hoặc “No valid entries.”
+    - Thumbnail: avatar người thắng đầu tiên (nếu có)
+    - Timestamp ở chân embed
+    - Hai nút Reroll:
+      - Trái: `🔁 reroll` — reroll loại bỏ những người đã trúng trước đó khỏi pool (thu hẹp dần)
+      - Phải: `👑 keep` — reroll nhưng vẫn giữ người trúng cũ trong pool
+
+### Reroll
+- `🔁 reroll` (exclude): lưu người thắng hiện tại vào bảng loại trừ, lần reroll sau sẽ không chọn lại họ.
+- `👑 keep`: vẫn giữ pool hiện tại (có thể trùng người thắng cũ nếu cho phép `multiwin`).
+- Kết quả reroll sẽ cập nhật trực tiếp vào tin công bố winners (hoặc tạo mới nếu thiếu) và lưu vào DB.
+
+---
+
+## i18n — Hành Vi Nâng Cao
+
+- Mặc định ngôn ngữ: `config.app.defaultLanguage` hoặc `DEFAULT_LANG`, fallback `en-US`.
+- Slash UI riêng tư (modal/ephemeral): dùng ngôn ngữ người dùng `interaction.locale` nếu có.
+- Nội dung công khai trong guild (embed, winners): dùng ngôn ngữ máy chủ (DB `guilds.language` → `guildLocale`).
+- Terms:
+  - Slash: ưu tiên ngôn ngữ người dùng → đảm bảo người dùng không thể viện lý do “không hiểu”.
+  - Prefix: dùng ngôn ngữ máy chủ.
+- Ảnh Terms: chọn theo `xx-YY.png` → `xx-yy.png` → `xx.png` → `en-US.png` → `en.png` → bất kỳ `.png` còn lại.
+- Embed thời gian: dùng `timestamp` (không nhét chuỗi `<t:...>` vào footer.text vì Discord không parse ở đó).
+
+---
+
+## CSDL — Bảng & Cột Liên Quan Giveaway
+
+- `giveaways`:
+  - `id BIGINT PK`
+  - `guild_id BIGINT` (FK → `guilds(guild_id)`)
+  - `channel_id BIGINT`, `message_id BIGINT` (tin gốc), `winners_message_id BIGINT` (tin công bố winners)
+  - `creator_id BIGINT`
+  - `prize VARCHAR(255)`, `description TEXT`
+  - `winners_count INT`, `allow_multi_win TINYINT(1)`
+  - `start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP`, `end_time TIMESTAMP NOT NULL`
+  - `status ENUM('running','ended','cancelled') DEFAULT 'running'`
+  - `winner_ids JSON`
+- `giveaway_entries`: tham gia (unique theo `(giveaway_id, user_id)`).
+- `giveaway_excluded`: tích lũy người bị loại cho chế độ reroll exclude.
+- Nâng cấp: bot cố gắng `ALTER TABLE giveaways ADD winners_message_id` nếu thiếu.
+
+Seed guilds:
+- Khi khởi động, bot seed tất cả guild hiện có vào bảng `guilds` theo lô 500 ID/lần.
+- Khi bot được mời vào guild mới: event `guildCreate` tự thêm guild vào `guilds`.
+
+---
+
+## Đồng Bộ Slash & Quyền
+
+- `!sync`: đồng bộ Global (mất vài phút)
+- `!sync guild`: đồng bộ riêng guild hiện tại (nhanh hơn)
+- Quyền tối thiểu kênh: `ViewChannel`, `SendMessages`, `SendMessagesInThreads`.
+
+---
+
+## Khắc Phục Sự Cố (FAQ)
+
+- “FK fails” khi tạo giveaway: kiểm tra guild đã seed (khởi động đã seed) hoặc bot vừa mới join chưa — event `guildCreate` sẽ xử lý.
+- Terms sai ngôn ngữ: xác nhận `DEFAULT_LANG`/`config.app.defaultLanguage`, đồng thời Slash Terms ưu tiên `interaction.locale` của người dùng.
+- Ảnh Terms không hiển thị: cần có `src/image/terms/en-US.png` hoặc `vi.png`; cơ chế fallback sẽ tìm biến thể hợp lệ.
+- Nút không chạy: kiểm tra quyền và Intent của bot.
